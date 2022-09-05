@@ -1,0 +1,202 @@
+from pickle import FALSE
+from pickletools import uint8
+# from readline import append_history_file
+from turtle import left, right
+import mediapipe as mp 
+import cv2
+import numpy as np
+from math import hypot
+
+cap= cv2.VideoCapture(0)
+
+mpFaceMesh= mp.solutions.face_mesh
+Face= mpFaceMesh.FaceMesh(refine_landmarks=True)
+
+def coordinates(x,y):
+    return int(x*height), int(y*width)
+
+def draw_line(x,y,x1,y1):
+    return cv2.line(frame1,(x,y),(x1,y1),(0,255,255),1) 
+
+def easy(num1,num2):
+    pt1 =face.landmark[num1]
+    x,y=coordinates(pt1.x,pt1.y)
+
+    pt2 = face.landmark[num2]
+    x1,y1= coordinates(pt2.x,pt2.y)
+
+    draw_line(x,y,x1,y1)
+    len = hypot(abs(x1-x),abs(y1-y))
+    return len 
+
+def ratio(hor_line,verti_line):
+    
+    return hor_line/verti_line
+
+
+def coodinate_helper(numb):
+    
+    pt1 =face.landmark[numb]
+    x,y=coordinates(pt1.x,pt1.y)
+
+    return (x,y)
+
+blink=0 
+
+def eye_maker(eye_region):
+    # Left_eye_region= np.array( [(coodinate_helper(33)),(coodinate_helper(246)),(coodinate_helper(161)), (coodinate_helper(160)),(coodinate_helper(159)),( coodinate_helper(158)),(coodinate_helper(157)),(coodinate_helper(173)),(coodinate_helper(133)),(coodinate_helper(155)),( coodinate_helper(154)),(coodinate_helper(153)),(coodinate_helper(145)),( coodinate_helper(144)),(coodinate_helper(163)),(coodinate_helper(7)),(coodinate_helper(33)),] ,np.int64)
+    #     # cv2.polylines(frame1,[Left_eye_region],True,(255,225,225),1)
+
+        
+        min_x=np.min(eye_region[:,0])
+        max_x=np.max(eye_region[:,0])
+        min_y=np.min(eye_region[:,1])
+        max_y=np.max(eye_region[:,1])
+
+        
+        
+        mask= np.zeros((width,height),np.uint8)
+        cv2.polylines(mask,[eye_region],True,255,1)
+        cv2.fillPoly(mask,[eye_region],255)
+        eye_bit= cv2.bitwise_and(frame1,frame1,mask=mask)
+
+        eye= eye_bit[min_y:max_y, min_x:max_x]
+        gray_eye=cv2.cvtColor(eye,cv2.COLOR_BGR2GRAY)
+        _,thresh_eye= cv2.threshold(gray_eye,70,255,cv2.THRESH_BINARY)
+        
+        hgt,wdt = thresh_eye.shape
+
+        return (hgt,wdt,thresh_eye)
+       
+while True:
+    res,frame1= cap.read()
+    width,height,_ = frame1.shape
+
+    frame= cv2.cvtColor(frame1,cv2.COLOR_BGR2RGB)
+
+    results= Face.process(frame)
+    for face in results.multi_face_landmarks:
+        # print(face)
+                # for i in range(130,180):
+            # Left Eye pupil hori 130 173 verti 158 145
+            # Right Eye pupil hori 398 359 verti 386 374
+            # pt1 = face.landmark[130]
+            # x,y = coordinates(pt1.x,pt1.y)
+
+            # pt2 = face.landmark[173]
+            # x1,y1= coordinates(pt2.x,pt2.y)
+
+                # draw_line(x,y,x1,y1)
+                
+        LH_len=easy(130,173)
+        RH_len=easy(398,359)
+        RV_len=easy(386,374)
+        LV_len=easy(158,145)
+
+        R_ratio= ratio(RH_len,RV_len)
+        L_ratio= ratio(LH_len,LV_len)
+
+        aplha= R_ratio>4.22 or L_ratio>4.22
+        if  aplha :
+            cv2.putText(frame1,"Blinking",(151,151),cv2.FONT_HERSHEY_COMPLEX,4,(255,0,0),2)
+                # blink+= 1
+            # beta=0
+            # print(R_ratio,L_ratio)
+        # else:
+        #     beta=1
+
+                
+
+        Left_eye_region= np.array( [(coodinate_helper(33)),(coodinate_helper(246)),(coodinate_helper(161)), (coodinate_helper(160)),(coodinate_helper(159)),( coodinate_helper(158)),(coodinate_helper(157)),(coodinate_helper(173)),(coodinate_helper(133)),(coodinate_helper(155)),( coodinate_helper(154)),(coodinate_helper(153)),(coodinate_helper(145)),( coodinate_helper(144)),(coodinate_helper(163)),(coodinate_helper(7)),(coodinate_helper(33)),] ,np.int64)
+        Right_eye_region= np.array( [(coodinate_helper(263)),(coodinate_helper(249)),(coodinate_helper(390)), (coodinate_helper(373)),(coodinate_helper(374)),( coodinate_helper(380)),(coodinate_helper(381)),(coodinate_helper(382)),(coodinate_helper(362)),(coodinate_helper(263)),( coodinate_helper(466)),(coodinate_helper(388)),(coodinate_helper(387)),( coodinate_helper(386)),(coodinate_helper(385)),(coodinate_helper(384)),(coodinate_helper(362)),] ,np.int64)
+        
+        if(len(Left_eye_region) !=0 or len(Right_eye_region) !=0):
+        # cv2.polylines(frame1,[Left_eye_region],True,(255,225,225),1)
+        # eye_maker(Left_eye_region)
+        # eye_maker(Right_eye_region)
+        
+        # min_x=np.min(Left_eye_region[:,0])
+        # max_x=np.max(Left_eye_region[:,1])
+        # min_y=np.min(Left_eye_region[:,0])
+        # max_y=np.max(Left_eye_region[:,1])
+
+        # mask= np.zeros((width,height),np.uint8)
+        # cv2.polylines(mask,[Left_eye_region],True,255,1)
+        # cv2.fillPoly(mask,[Left_eye_region],255)
+        # lft_eye= cv2.bitwise_and(frame1,frame1,mask=mask)
+
+        # gray_eye=cv2.cvtColor(lft_eye,cv2.COLOR_BGR2GRAY)
+        # _,thresh_eye= cv2.threshold(gray_eye,50,255,cv2.THRESH_BINARY)
+        # hgt,wdt = thresh_eye.shape
+
+            (hgt,wdt,thresh_eye)=eye_maker(Left_eye_region)
+            L_left_side_thresh= thresh_eye[0:hgt,0:int(wdt/2)]
+            L_right_side_thresh= thresh_eye[0:hgt,int(wdt/2):wdt]
+            L_right_white= cv2.countNonZero(L_right_side_thresh)
+            L_left_white= cv2.countNonZero(L_left_side_thresh)
+            # cv2.imshow('lft lft',left_side_thresh)
+            # cv2.imshow('lft rht',right_side_thresh)
+            # cv2.putText(frame1,'left_left: {}'.format(str(left_white)),(20,50),cv2.FONT_HERSHEY_PLAIN,1,(10,255,10),2)   
+            # cv2.putText(frame1,'left_right: {}'.format(str(right_white)),(20,150),cv2.FONT_HERSHEY_PLAIN,1,(10,255,10),2)   
+
+            L_gaze_ratio=L_left_white/L_right_white
+            cv2.putText(frame1,'LEFT_GAZE: {}'.format(str(L_gaze_ratio)),(10,50),cv2.FONT_HERSHEY_PLAIN,2,(255,255,255),2)   
+
+            (hgt,wdt,thresh_eye)=eye_maker(Right_eye_region)
+            R_left_side_thresh= thresh_eye[0:hgt,0:int(wdt/2)]        
+            R_right_side_thresh= thresh_eye[0:hgt,int(wdt/2):wdt]
+            R_right_white= cv2.countNonZero(R_right_side_thresh)
+            R_left_white=cv2.countNonZero(R_left_side_thresh)
+            # cv2.imshow('rht lft',left_side_thresh)
+            # cv2.imshow('rht rht',right_side_thresh)       
+            # cv2.putText(frame1,'righ_left:{}'.format(str(left_white)),(100,250),cv2.FONT_HERSHEY_PLAIN,1,(10,255,10),2)    
+            # cv2.putText(frame1,'right_right:{}'.format(str(right_white)),(100,350),cv2.FONT_HERSHEY_PLAIN,1,(10,255,10),2)    
+
+            R_gaze_ratio=R_left_white/R_right_white
+            cv2.putText(frame1,'Right_gaze: {}'.format(str(R_gaze_ratio)),(20,150),cv2.FONT_HERSHEY_PLAIN,2,(255,255,255),2)   
+
+
+            # cv2.imshow("Mask",mask)
+            # cv2.resize(eye,None,fx=5,fy=5)
+            # # cv2.imshow("eye",eye)
+            # cv2.imshow("Left_eye",left_eye)
+
+            check_frame=np.zeros((501,501,3),np.uint8)
+
+            if L_gaze_ratio<=0.699  and R_gaze_ratio<=0.699 :
+                cv2.putText(frame1,'RIGHT',(20,250),cv2.FONT_HERSHEY_PLAIN,2,(255,255,255),2)
+                check_frame[:]=(0,0,255) 
+                z=1
+            elif 0.699<L_gaze_ratio<1.59 or 0.7<R_gaze_ratio<1.49:
+                cv2.putText(frame1,'CENTRE',(20,250),cv2.FONT_HERSHEY_PLAIN,2,(255,255,255),2) 
+                z=0
+            else:
+                cv2.putText(frame1,'LEFT',(20,250),cv2.FONT_HERSHEY_PLAIN,2,(255,255,255),2) 
+                check_frame[:]=(255,0,0)
+                z=-1
+
+            cv2.imshow("frame",check_frame)
+
+
+
+
+
+
+                # print(R_ratio,L_ratio)
+
+                # pt2= face.landmark[]
+                # x= int(pt1.x *height)
+                # y= int(pt1.y *width)
+                # x1= int(pt2.x *height)
+                # y1= int(pt2.y *width)
+                # print("x\y", x ,y)
+                # cv2.circle(frame1,(x,y),2,(255,0,0),-1)  
+                # cv2.line(frame1,(x,y),(x1,y1),(0,255,255),1) 
+                # cv2.putText(frame1,str(i),(x,y),cv2.FONT_HERSHEY_COMPLEX,0.3,(0,0,255),1)
+                
+        cv2.imshow('Img',frame1)
+        if cv2.waitKey(1) & 0xFF== ord('q'):
+            break
+            
+cap.release()
+cv2.destroyAllWindows()    
