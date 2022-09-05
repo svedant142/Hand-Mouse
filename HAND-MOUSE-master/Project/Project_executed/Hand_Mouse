@@ -1,0 +1,119 @@
+from enum import auto
+from math import gamma
+import cv2
+import mediapipe as mp
+import autopy
+import numpy as np
+
+mpDraw=mp.solutions.drawing_utils
+hands1=mp.solutions.hands
+hand_mesh=hands1.Hands()
+
+frameh=720
+framew=960
+
+cap=cv2.VideoCapture(0)
+def handlandmark(frame1):
+    height,width,_=frame1.shape
+
+    results= hand_mesh.process(frame1)
+
+    if results.multi_hand_landmarks:
+        for lms in results.multi_hand_landmarks:
+            mpDraw.draw_landmarks(frame,lms,hands1.HAND_CONNECTIONS,mpDraw.DrawingSpec(color=(121,22,76),thickness=2,circle_radius=4))
+            
+            for id,landmark in enumerate(lms.landmark):
+                # print(id,landmark)
+                x,y = int(landmark.x *width), int(landmark.y *height) 
+                landmark_list.append([id,x,y])
+                # print(landmark_list)
+                # cv2.waitKey(10)
+          
+    return landmark_list
+
+
+def up_down(landmark_list):
+    check=[]
+
+    Tip_id=[4,8,12,16,20]
+
+    #Thumb
+    if landmark_list[Tip_id[0]][1] <landmark_list[Tip_id[0]-1][1]:
+            check.append(1)
+    else:
+            check.append(0)
+    #Fingers
+    for id in range(1,5):
+        if landmark_list[Tip_id[id]][2]<landmark_list[Tip_id[id]-1][2]:
+            check.append(1)
+        else:
+            check.append(0)   
+
+    # print(check)
+    return check
+
+wd_screen,ht_screen= autopy.screen.size()
+# print(wd_screen,ht_screen)
+
+def mouse_control(lms_list):
+    x1,y1=lms_list[8][1:]
+    # x2= np.interp(x1,(80,640-80),(0,wd_screen))
+    # y2= np.interp(y1,(80,480-80),(0,ht_screen))
+
+    x2= x1*(wd_screen/framew)
+    y2= y1*(ht_screen/frameh)
+    # priint wd_screen
+    return x2,y2
+
+
+while True:
+    landmark_list=[]
+    res,frame=cap.read()
+    ht_frame,wd_frame,_= frame.shape
+    framew=wd_frame*2
+    frameh=ht_frame*2
+    frame=cv2.resize(frame,(framew,frameh))
+    frame=cv2.flip(frame,1)
+    frame1=cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+    
+    landmark_list=handlandmark(frame1)
+    
+    if len(landmark_list) !=0:
+        open_check=up_down(landmark_list)
+    # cv2.imshow('Landmark',)
+        mx,my=mouse_control(landmark_list)
+
+        # if not open_check[3] and not open_check[0] and not open_check[1] and not open_check[4] and not open_check[2]:
+        mx=max(1,mx)
+        mx=min(mx,wd_screen-1)
+        my=max(1,my)
+        my=min(my,ht_screen-1)
+        try:
+            autopy.mouse.move(mx,my)
+        except:
+            print(mx,my,wd_screen,ht_screen)
+        cv2.waitKey(50)
+    #   print(open_check)
+        if open_check[0] and open_check[4] and not open_check[2]:
+            autopy.mouse.click()
+            print("Clicked")
+
+            cv2.waitKey(10)
+                # click=1
+        if not open_check[0] and open_check[1] and open_check[2] and open_check[3] and not open_check[4] :
+            autopy.mouse.toggle(down=True)
+            # cv2.EVENT_LBUTTONDOWN
+            print("Toggled")
+        if not open_check[0] and open_check[1] and open_check[2] and not open_check[3] and not open_check[4] :
+            autopy.mouse.toggle(down=False)    
+            print("Untoggled")
+    
+
+
+
+    cv2.imshow("Frame",frame)
+    if cv2.waitKey(1) & 0xFF==ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()    

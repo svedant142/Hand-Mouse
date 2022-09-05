@@ -1,0 +1,18 @@
+import cv2
+
+cap=cv2.VideoCapture('Project/videoplayback.mp4')
+# fgbg=cv2.createBackgroundSubtractorMOG2(detectShadows=False)
+fgbg=cv2.bgsegm.createBackgroundSubtractorMOG()
+
+while True:
+    res,frame= cap.read()
+
+    fgmask= fgbg.apply(frame)
+
+    cv2.imshow("FG mask",fgmask)
+
+    if cv2.waitKey(1) & 0xFF== ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()    
